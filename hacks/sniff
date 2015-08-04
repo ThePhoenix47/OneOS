@@ -11,12 +11,10 @@ end
 open( rednet.CHANNEL_REPEAT )
 
 -- Main loop (terminate to break)
-local ok, error = pcall( function()
+log = fs.open("/snifflog", "a")
 
-    log = fs.open("/snifflog", "a")
-
-    while true do
-        local sEvent, sModem, nChannel, nReplyChannel, tMessage = os.pullEvent()
+while true do
+    local sEvent, sModem, nChannel, nReplyChannel, tMessage = os.pullEvent()
         if sEvent == "modem_message" then
             -- Got a modem message, write to sniff log
             print("Sniffed Message from ".. nReplyChannel .." to " .. tMessage.nRecipient .."!")
@@ -24,11 +22,4 @@ local ok, error = pcall( function()
             log.flush()
         end
     end
-end )
-if not ok then
-    printError( error )
 end
-
--- Close channels
-close( rednet.CHANNEL_REPEAT )
-log.close()
