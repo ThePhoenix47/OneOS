@@ -1,0 +1,3 @@
+rednet.open("back")
+local sender, message, protocol = rednet.receive()
+print(message)

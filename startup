@@ -1,3 +1,4 @@
+os.loadAPI("nettools")
 -- Comment out these lines if you *really* want to try OneOS in TLCO
 dofile('/System/API/Bootstrap.lua')
 do return end

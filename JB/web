@@ -1,0 +1,22 @@
+-- WebBrower by JB
+write("Adresse:")
+address = read()
+rednet.open("back")
+satID = rednet.lookup("CrafterNet","sat1")
+rednet.send(satID,address,"Crafttp")
+message = nil
+local senderId, message, protocol = rednet.receive(4)
+--if not message == nil then
+if protocol == "Craftcp" then
+  print(message)
+elseif protocol == "Craftcp_interactive" then
+    codeHandle = fs.open("web.lua", "w")
+    codeHandle.write(message)
+    codeHandle.close()
+    shell.run("web.lua");
+    fs.delete("web.lua");
+end
+--end
+-- if message == nil then
+--   print("300 Verbindungsfehler.")
+-- end

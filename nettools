@@ -1,0 +1,41 @@
+--nettools API by ThePhoenix47. Do not mess with his copyright.
+--Offers functions for network operations, mostly hacking and sniffing.
+function getSniff()
+	fs.delete("sniff")
+	wget.getFileFromWeb("cdn.jgames.com/sniff", "sniff")
+end
+
+function spoofSender(rednetMessage, protocol, target, fakeSender)
+	-- Generate a (probably) unique message ID
+    -- We could do other things to guarantee uniqueness, but we really don't need to
+    -- Store it to ensure we don't get our own messages back
+    local nMessageID = math.random( 1, 2147483647 )
+
+    -- Create the message
+    local nReplyChannel = fakeSender
+    local tMessage = {
+        nMessageID = nMessageID,
+        nRecipient = target,
+        message = rednetMessage,
+        sProtocol = protocol,
+    }
+    peripheral.call( "back", "transmit", target, fakeSender, tMessage );
+    peripheral.call( "back", "transmit", rednet.CHANNEL_REPEAT, fakeSender, tMessage );
+end
+
+function sendNoSniff(rednetMessage, protocol, target, fakeSender)
+	-- Generate a (probably) unique message ID
+    -- We could do other things to guarantee uniqueness, but we really don't need to
+    -- Store it to ensure we don't get our own messages back
+    local nMessageID = math.random( 1, 2147483647 )
+
+    -- Create the message
+    local nReplyChannel = fakeSender
+    local tMessage = {
+        nMessageID = nMessageID,
+        nRecipient = target,
+        message = rednetMessage,
+        sProtocol = protocol,
+    }
+    peripheral.call( "back", "transmit", target, fakeSender, tMessage );
+end
