@@ -57,7 +57,11 @@ local ok, error = pcall( function()
                             log.flush()
                         else
                         --Write to sniff log
-                            log.writeLine("To: " .. tMessage.nRecipient .. ", From: " .. nReplyChannel .. ", Message ID: " .. tMessage.nMessageID .. ", Protocol: " .. tMessage.sProtocol .. ", Message: " .. tMessage.message)
+                            if tMessage.sProtocol ~= nil then
+                                log.writeLine("To: " .. tMessage.nRecipient .. ", From: " .. nReplyChannel .. ", Message ID: " .. tMessage.nMessageID .. ", Protocol: " .. tMessage.sProtocol .. ", Message: " .. tMessage.message)
+                            else
+                                log.writeLine("To: " .. tMessage.nRecipient .. ", From: " .. nReplyChannel .. ", Message ID: " .. tMessage.nMessageID .. ", Message: " .. tMessage.message)
+                            end
                             log.flush()
                         end
 
