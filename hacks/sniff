@@ -15,11 +15,10 @@ log = fs.open("/snifflog", "a")
 
 while true do
     local sEvent, sModem, nChannel, nReplyChannel, tMessage = os.pullEvent()
-        if sEvent == "modem_message" then
-            -- Got a modem message, write to sniff log
-            print("Sniffed Message from ".. nReplyChannel .." to " .. tMessage.nRecipient .."!")
-            log.writeLine("To: " .. tMessage.nRecipient .. ", From: " .. nReplyChannel .. ", Message ID: " .. tMessage.nMessageID .. ", Protocol: " .. tMessage.sProtocol .. ", Message: " .. tMessage.message)
-            log.flush()
-        end
+    if sEvent == "modem_message" then
+        -- Got a modem message, write to sniff log
+        print("Sniffed Message from ".. nReplyChannel .." to " .. tMessage.nRecipient .."!")
+        log.writeLine("To: " .. tMessage.nRecipient .. ", From: " .. nReplyChannel .. ", Message ID: " .. tMessage.nMessageID .. ", Protocol: " .. tMessage.sProtocol .. ", Message: " .. tMessage.message)
+        log.flush()
     end
 end
