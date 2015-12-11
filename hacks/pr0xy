@@ -1,0 +1,81 @@
+--[[
+    [API] Pr0xy
+    @author TheOddByte
+    @version 1.2
+
+    Usage example:
+        local Pr0xy = dofile( "pr0xy" ) -- load the api
+        local proxy = Pr0xy.new( "right" ) -- create a new proxy table
+        proxy:enable() -- enable the proxy
+        proxy.rate = 10 -- change the rate for autoswitch( if it's enabled )
+        proxy.autoswitch = false -- disable autoswitch
+        proxy.id = 101 -- manually change the id
+        proxy:disable() -- disable the proxy
+--]]
+
+local Pr0xy = {}
+Pr0xy.__index = Pr0xy
+
+
+Pr0xy.new = function( modem )
+
+    if not modem then
+        error( "Specify modem", 2 )
+    end
+
+    local proxy = {
+        id         = math.random( 0, 65534 );
+        old_id     = os.getComputerID();
+        autoswitch = true;
+        rate       = 20;
+        modem      = modem;
+    }
+    proxy.native = {}
+    proxy.native.os = {}
+    for i, v in pairs( os ) do
+        proxy.native.os[i] = v
+    end
+    
+    setmetatable( proxy, Pr0xy )
+    return proxy
+end
+
+
+
+
+
+
+function Pr0xy:enable()
+    self.timer = os.startTimer( self.rate )
+    
+    os.getComputerID = function()
+        return self.id
+    end
+    
+    os.pullEvent = function( ... )
+        local e = { self.native.os.pullEvent( ... ) }
+        if e[1] == "timer" then
+            if e[2] == self.timer then
+                self.timer = os.startTimer( self.rate )
+                if self.autoswitch then
+                    self.old_id = self.id
+                    self.id = math.random( 0, 65534 )
+                end
+                peripheral.call( self.modem, "close", self.old_id )
+                peripheral.call( self.modem, "close", 65535 )
+                peripheral.call( self.modem, "open", self.id )
+                peripheral.call( self.modem, "open", 65535 )
+            end
+        end
+        return unpack( e )
+    end
+end
+
+
+function Pr0xy:disable()
+    for i, v in pairs( self.native.os ) do
+        os[i] = v
+    end
+end
+
+return Pr0xy
